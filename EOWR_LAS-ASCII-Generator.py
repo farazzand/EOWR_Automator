@@ -171,20 +171,6 @@ def clear_workflow_area(parent):
         widget.destroy()
 
 
-def show_loading_animation(parent):
-    """Display a loading animation (cycling dots) in the given parent."""
-    loading_label = tk.Label(parent, text=".", font=UI_FONT, bg=UI_BG, fg=UI_FG)
-    loading_label.pack(pady=10)
-
-    def update_dots(count=1):
-        dots = "." * count
-        loading_label.config(text=dots)
-        next_count = count + 1 if count < 3 else 1
-        loading_label.after(500, update_dots, next_count)
-
-    update_dots()
-    return loading_label
-
 
 # ----------------- MODIFIED UI FUNCTIONS (Using workflow area) ----------------- #
 
@@ -472,14 +458,20 @@ def select_output_options(parent, update_progress):
     if any(opt.startswith('LAS') for opt in selected_options):
         las_frame = tk.Frame(dir_container, bg=UI_BG)
         las_frame.pack(pady=10, padx=10, fill="x")
-        tk.Label(las_frame, text="Select Directory for output LAS Files. \n Files will be named automatically.", bg=UI_BG, fg=UI_FG, font=UI_FONT).pack()
+        tk.Label(las_frame, text="Select Directory for output LAS Files. \n Files will be named automatically.",
+                 bg=UI_BG, fg=UI_FG, font=UI_FONT).pack()
         las_label = tk.Label(las_frame, text="No directory selected", bg=UI_BG, fg=UI_FG, font=UI_FONT)
         las_label.pack()
+
         def browse_las():
             nonlocal las_dir
             las_dir = filedialog.askdirectory(title="Select Directory for LAS Files")
             if las_dir:
                 las_label.config(text=f"LAS Directory: {las_dir}")
+                if os.listdir(las_dir):  # Check if directory contains files
+                    messagebox.showwarning("Warning",
+                                           "The selected folder contains files. Existing files with the same name may be replaced.")
+
         tk.Button(las_frame, text="Browse", command=browse_las,
                   bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT).pack(pady=5)
 
@@ -487,14 +479,20 @@ def select_output_options(parent, update_progress):
     if any(opt.startswith('ASCII') for opt in selected_options):
         ascii_frame = tk.Frame(dir_container, bg=UI_BG)
         ascii_frame.pack(pady=10, padx=10, fill="x")
-        tk.Label(ascii_frame, text="Select Directory for output ASCII Files. \n Files will be named automatically.", bg=UI_BG, fg=UI_FG, font=UI_FONT).pack()
+        tk.Label(ascii_frame, text="Select Directory for output ASCII Files. \n Files will be named automatically.",
+                 bg=UI_BG, fg=UI_FG, font=UI_FONT).pack()
         ascii_label = tk.Label(ascii_frame, text="No directory selected", bg=UI_BG, fg=UI_FG, font=UI_FONT)
         ascii_label.pack()
+
         def browse_ascii():
             nonlocal ascii_dir
             ascii_dir = filedialog.askdirectory(title="Select Directory for ASCII Files")
             if ascii_dir:
                 ascii_label.config(text=f"ASCII Directory: {ascii_dir}")
+                if os.listdir(ascii_dir):  # Check if directory contains files
+                    messagebox.showwarning("Warning",
+                                           "The selected folder contains files. Existing files with the same name may be replaced.")
+
         tk.Button(ascii_frame, text="Browse", command=browse_ascii,
                   bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT).pack(pady=5)
 
@@ -719,9 +717,8 @@ def main():
     if not las_file_path:
         return
 
-    # Step 2: Read LAS file (show loading animation during processing)
+    # Step 2: Read LAS file
     clear_workflow_area(workflow_frame)
-    loading = show_loading_animation(workflow_frame)
     try:
         las = lasio.read(las_file_path)
         update_progress("LAS input file imported and read successfully.")
@@ -729,14 +726,11 @@ def main():
         update_progress(f"Error reading LAS file: {e}")
         messagebox.showerror("Error", f"Failed to read LAS file. Make sure right format is selected\n Error: {str(e)}")
         print("Error reading LAS file:", e)
-        loading.destroy()
         sys.exit(1)
 
-    loading.destroy()
 
-    # Step 3: Prepare data buffer and curve index map (show loading animation)
+    # Step 3: Prepare data buffer and curve index map
     clear_workflow_area(workflow_frame)
-    loading = show_loading_animation(workflow_frame)
     try:
         data_buffer = np.array(las.data.copy())
     except AttributeError:
@@ -744,7 +738,6 @@ def main():
     update_progress("Data buffer created.")
     curve_index_map = {curve.mnemonic.upper(): idx for idx, curve in enumerate(las.curves)}
     update_progress("Curve index map created.")
-    loading.destroy()
 
     # Step 4: Collect header information (text unchanged)
     header_answers = collect_header_info(workflow_frame, update_progress)
@@ -756,20 +749,17 @@ def main():
     if has_npd and npd_data:
         globals()["npd_data"] = npd_data  # Store for use in process_data_buffer
 
-    # Step 6: Process data (show loading animation)
+    # Step 6: Process data
     clear_workflow_area(workflow_frame)
-    loading = show_loading_animation(workflow_frame)
     data_half_meter, data_one_meter, data_five_meter = process_data_buffer(data_buffer, curve_index_map,
                                                                            update_progress)
     if data_one_meter.shape[0] > 0 and data_one_meter[-1, 0] > float(header_answers[3]):
         update_progress("Depth associated with the last row > actual TD")
         data_one_meter[-1, 3:] = NULL_VALUE
         update_progress("First three columns of the last row kept unchanged. Rest set to -999.25")
-    loading.destroy()
 
     # Step 7: Update header with user inputs
     clear_workflow_area(workflow_frame)
-    loading = show_loading_animation(workflow_frame)
     today = datetime.now()
     date_string = today.strftime("%m/%d/%Y")
     field_mapping = {
@@ -791,7 +781,6 @@ def main():
                 except ValueError:
                     continue
     update_progress("Header updated with provided inputs by user.")
-    loading.destroy()
 
     # Step 8: Select output options and directories
     selected_options, las_dir, ascii_dir = select_output_options(workflow_frame, update_progress)
@@ -802,15 +791,17 @@ def main():
 
     # Step 9: Generate output files using a background thread
     clear_workflow_area(workflow_frame)
-    loading = show_loading_animation(workflow_frame)
 
     def handle_generation_completion():
-        loading.destroy()
         clear_workflow_area(workflow_frame)
         tk.Button(workflow_frame, text="Close", command=lambda: (root.destroy(), sys.exit(0)),
                   bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT, relief="raised") \
             .pack(pady=10)
         update_progress("LAS/ASCII Processing completed. Please find the output file(s) in the selected path(s). \n Click 'Close' to exit.")
+        # Finalize execution timing
+        end_time = time.time()
+        execution_time = end_time - START_TIME
+        update_progress(f"Execution completed in {execution_time:.6f} seconds")
 
     def check_generation_queue():
         while True:
@@ -852,10 +843,7 @@ def main():
 
 
     root.mainloop()
-    # Finalize execution timing
-    end_time = time.time()
-    execution_time = end_time - START_TIME
-    update_progress(f"Execution completed in {execution_time:.6f} seconds")
+
 
 
 if __name__ == "__main__":
