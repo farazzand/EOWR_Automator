@@ -189,50 +189,75 @@ def show_loading_animation(parent):
 # ----------------- MODIFIED UI FUNCTIONS (Using workflow area) ----------------- #
 
 def select_las_file(parent, update_progress):
-    """Prompt user to select a LAS file with requirements dialog.
-    (Text remains exactly as in your original code.)"""
+    """Prompt user to select a LAS file and validate its depth step size."""
     clear_workflow_area(parent)
     file_path_var = tk.StringVar()
-    dialog = tk.Frame(parent, borderwidth=2, relief="groove", bg=UI_BG)
-    dialog.pack(padx=10, pady=10, fill="both", expand=True)
-    dialog_title = tk.Label(dialog, text="Input LAS File", font=UI_TITLE_FONT, bg=UI_BG, fg=UI_FG)
-    dialog_title.pack(pady=5)
-    requirements_message = (
-        "*** Before proceeding with the selection of the LAS file, please ensure it meets the following requirements: ***\n\n\n"
-        "- The input LAS file should be generated with a 0.5-meter step regardless of the desired outputs.\n\n"
-        "- Input file includes the maximum possible depth range. For example, if drilling began at a depth that is not a whole meter (e.g., 1000.2 m), the file should start from the nearest shallower whole meter if there is data in the database(e.g., 1000 m).\n\n"
-        "- Similarly, if the well’s total depth (TD) is not a whole meter (e.g., 5000.7 m), the file should extend to the nearest deeper whole meter if there is data in the database (e.g., 5001 m).\n\n"
-        "- MWD memory data must be imported before generating the LAS file.\n"
-    )
-    tk.Label(dialog, text=requirements_message, justify=tk.LEFT, bg=UI_BG, fg=UI_FG, font=UI_FONT, wraplength=700) \
-        .pack(padx=10, pady=10)
 
-    button_frame = tk.Frame(dialog, bg=UI_BG)
-    button_frame.pack(pady=5)
+    while True:  # Keep prompting until a valid file is selected
+        dialog = tk.Frame(parent, borderwidth=2, relief="groove", bg=UI_BG)
+        dialog.pack(padx=10, pady=10, fill="both", expand=True)
+        dialog_title = tk.Label(dialog, text="Input LAS File", font=UI_TITLE_FONT, bg=UI_BG, fg=UI_FG)
+        dialog_title.pack(pady=5)
 
-    def on_select():
-        file_path = filedialog.askopenfilename(
-            title="Select a LAS file",
-            filetypes=[("LAS files", "*.las"), ("All files", "*.*")]
+        requirements_message = (
+            "*** Before proceeding with the selection of the LAS file, please ensure it meets the following requirements: ***\n\n\n"
+            "- The input LAS file should be generated with a 0.5-meter step regardless of the desired outputs.\n\n"
+            "- Input file includes the maximum possible depth range. For example, if drilling began at a depth that is not a whole meter (e.g., 1000.2 m), the file should start from the nearest shallower whole meter if there is data in the database(e.g., 1000 m).\n\n"
+            "- Similarly, if the well’s total depth (TD) is not a whole meter (e.g., 5000.7 m), the file should extend to the nearest deeper whole meter if there is data in the database (e.g., 5001 m).\n\n"
+            "- MWD memory data must be imported before generating the LAS file.\n"
         )
-        file_path_var.set(file_path)
+        tk.Label(dialog, text=requirements_message, justify=tk.LEFT, bg=UI_BG, fg=UI_FG, font=UI_FONT, wraplength=700) \
+            .pack(padx=10, pady=10)
 
-    tk.Button(button_frame, text="Select LAS File", command=on_select,
-              bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT, relief="raised") \
-        .pack(side=tk.LEFT, padx=5)
-    tk.Button(button_frame, text="Cancel", command=lambda: file_path_var.set(""),
-              bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT, relief="raised") \
-        .pack(side=tk.LEFT, padx=5)
-    parent.wait_variable(file_path_var)
-    file_path = file_path_var.get()
-    dialog.destroy()
-    if not file_path:
-        update_progress("No file selected. Exiting.")
-        print("No file selected. Exiting.")
-    else:
-        update_progress(f"Selected file: {file_path}")
-        print(f"Selected file: {file_path}")
-    return file_path
+        button_frame = tk.Frame(dialog, bg=UI_BG)
+        button_frame.pack(pady=5)
+
+        def on_select():
+            file_path = filedialog.askopenfilename(
+                title="Select a LAS file",
+                filetypes=[("LAS files", "*.las"), ("All files", "*.*")]
+            )
+            file_path_var.set(file_path)
+
+        tk.Button(button_frame, text="Select LAS File", command=on_select,
+                  bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT, relief="raised") \
+            .pack(side=tk.LEFT, padx=5)
+        tk.Button(button_frame, text="Cancel", command=lambda: file_path_var.set(""),
+                  bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT, relief="raised") \
+            .pack(side=tk.LEFT, padx=5)
+
+        parent.wait_variable(file_path_var)
+        file_path = file_path_var.get()
+        dialog.destroy()
+
+        if not file_path:
+            update_progress("No file selected. Exiting.")
+            print("No file selected. Exiting.")
+            return None  # Exit the function if the user cancels
+
+        # Validate the depth step size
+        try:
+            las = lasio.read(file_path)
+            depths = las.index
+
+            if len(depths) < 2:
+                raise ValueError("LAS file does not contain enough depth values for validation.")
+
+            step_size = depths[1] - depths[0]
+
+            if step_size != 0.5:
+                messagebox.showerror("Invalid Step Size",
+                                     f"Error: The depth step size is {step_size} meters instead of 0.5 meters.\n"
+                                     "Please regenerate the LAS file with 0.5 meters step size.")
+                continue  # Restart file selection
+
+            update_progress(f"Selected valid file: {file_path}")
+            print(f"Selected valid file: {file_path}")
+            return file_path  # Return the valid file
+
+        except Exception as e:
+            messagebox.showerror("File Error", f"Error reading LAS file: {e}\nPlease select a valid file.")
+            continue  # Restart file selection
 
 
 def collect_header_info(parent, update_progress):
@@ -316,7 +341,7 @@ def collect_header_info(parent, update_progress):
 
     tk.Button(dialog, text="Submit", command=validate_and_submit,
               bg=UI_BUTTON_BG, fg=UI_BUTTON_FG, font=UI_FONT, relief="raised") \
-        .pack(pady=10)
+        .pack(pady=5)
     parent.wait_window(dialog)
     return answers
 
@@ -553,7 +578,11 @@ def format_data(data_subset, las):
         formatted_row = []
         for j, value in enumerate(row):
             mnemonic = las.curves[j].mnemonic.upper()
-            if np.isnan(value):
+
+            # Ensure -999.25 remains unchanged
+            if value == NULL_VALUE:
+                formatted_value = str(NULL_VALUE)
+            elif np.isnan(value):
                 formatted_value = str(NULL_VALUE)
             else:
                 if mnemonic == "DXC":
@@ -569,6 +598,7 @@ def format_data(data_subset, las):
                     formatted_value = f"{value:.0f}"
                 else:
                     formatted_value = f"{value:.2f}"
+
             formatted_row.append(formatted_value)
         formatted_lines.append(ASCII_SEPARATOR.join(formatted_row) + "\n")
     return formatted_lines
