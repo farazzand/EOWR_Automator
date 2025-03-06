@@ -590,9 +590,9 @@ def format_data(data_subset, las):
                 elif mnemonic in ["GASX", "MDIA", "MDOA", "ECDT", "BDTI", "BDDI", "BRVC", "LITH"]:
                     formatted_value = f"{value:.3f}"
                 elif mnemonic in ["C1C2", "C1C3", "C1C4", "C1C5", "Depth", "DVER", "ROPA", "TQA", "TQX", "TVA", "MFIA",
-                                  "TCTI"]:
+                                  "TCTI", "BDIA"]:
                     formatted_value = f"{value:.2f}"
-                elif mnemonic in ["BDIA", "HKLA", "HKLX", "WOBA", "SPPA", "MTIA", "MTOA"]:
+                elif mnemonic in ["HKLA", "HKLX", "WOBA", "SPPA", "MTIA", "MTOA"]:
                     formatted_value = f"{value:.1f}"
                 elif mnemonic in ["RPMA", "RPMB", "HSX", "MTHA", "ETHA", "PRPA", "IBTA", "NBTA", "IPNA", "NPNA"]:
                     formatted_value = f"{value:.0f}"
