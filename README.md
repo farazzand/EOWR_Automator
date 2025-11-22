@@ -1,101 +1,112 @@
-EOWR LAS/ASCII Generator
+# EOWR LAS/ASCII Generator  
+#### Description:
 
-A Python application for processing and generating well log files in LAS (Log ASCII Standard) and ASCII formats. Designed for drilling and mud logging workflows, it supports multi-step depth processing, metadata handling, validation, and flexible export options.
+EOWR LAS/ASCII Generator is a Python application for processing and generating well log files in LAS (Log ASCII Standard) and ASCII formats. Designed for drilling and mud logging workflows, it supports multi-step depth processing, metadata handling, validation, and flexible export options.
 
-Features
+---
 
-Cross-platform GUI built with tkinter.
+## Features
 
-Output generation for LAS and ASCII at 0.5 m, 1 m, and 5 m step sizes.
+- **Cross-Platform Graphical Interface**  
+  GUI built with tkinter, providing an intuitive workflow for file selection, configuration, and export.
 
-Header and metadata dialogs for company, well, field, rig, and related info.
+- **Multi-Step Output Generation**  
+  Supports LAS and ASCII output at 0.5 m, 1 m, and 5 m step sizes.
 
-Depth-range validation with user-defined start and total depth (TD).
+- **Metadata Handling**  
+  Dedicated dialogs for entering company, well, field, rig, and related header information.
 
-Optional integration of NPD (Lithology) codes from Excel files (.xlsx/.xls).
+- **Depth Validation**  
+  User-defined start depth and total depth (TD) with validation to ensure consistency.
 
-Multiple-file export with overwrite warnings.
+- **NPD Integration (Optional)**  
+  Ability to import NPD (Lithology) codes from Excel files (.xlsx / .xls).
 
-Threaded processing to maintain UI responsiveness.
+- **File Management & Safety**  
+  Multiple-file export with overwrite warnings and directory selection.
 
-LAS input validation for step size and depth consistency.
+- **Performance & Stability**  
+  Threaded processing to keep the UI responsive during operations.
 
-Rounding and formatting utilities for drilling parameters and gas ratios.
+- **Data Integrity Checks**  
+  Validation of LAS input for correct step size and depth consistency.
 
-Progress and error reporting panel within the UI.
+- **Formatting & Calculations**  
+  Rounding and formatting utilities for drilling parameters and gas ratios.
 
-Requirements
+- **User Feedback System**  
+  Built-in progress and error reporting panel within the interface.
 
-Python 3.x
+---
 
-tkinter (bundled with most Python installations)
+## Requirements
 
-lasio
-
-numpy
-
-pandas
+- Python 3.x  
+- tkinter (bundled with most Python installations)  
+- lasio  
+- numpy  
+- pandas  
 
 Install dependencies:
 
 pip install lasio numpy pandas
 
-Usage
+---
 
-Start the application
-Run the script to open the main GUI.
+## Usage
 
-Select output types
-Choose LAS and/or ASCII formats and the step sizes (0.5 m, 1 m, 5 m).
+1. **Start the Application**  
+   Run the script to open the main GUI.
 
-Provide LAS input files
-Select the corresponding LAS files for each chosen step size. The application validates depth intervals.
+2. **Select Output Types**  
+   Choose LAS and/or ASCII formats and the step sizes (0.5 m, 1 m, 5 m).
 
-Enter well metadata
-Complete the dialog fields for company, well info, field, rig, and type.
+3. **Provide LAS Input Files**  
+   Select the corresponding LAS files for each chosen step size. The application validates depth intervals.
 
-Specify depth (if generating 1 m files)
-Provide the actual start depth and total depth.
+4. **Enter Well Metadata**  
+   Fill in company details, well information, field, rig, and type.
 
-Optional: Load NPD codes
-Select an Excel file with two numeric columns, or choose “No NPD”.
+5. **Specify Depth (if generating 1 m files)**  
+   Provide the actual start depth and total depth.
 
-Choose output directories
-Set the destinations for LAS and/or ASCII files.
+6. **Optional: Load NPD Codes**  
+   Select an Excel file with two numeric columns, or choose “No NPD”.
 
-Process and export
-The program applies rounding, depth logic, and optional NPD codes, then generates the selected outputs with correct headers.
+7. **Choose Output Directories**  
+   Define destination folders for LAS and/or ASCII files.
 
-Completion
-Files such as MUDLOG1m.las or MUDLOG0.5m.asc are saved in the selected folders.
+8. **Process and Export**  
+   The program applies rounding logic, validates data, integrates NPD (if applicable), and generates outputs with correct headers.
 
-Supported File Types
+9. **Completion**  
+   Files such as MUDLOG1m.las or MUDLOG0.5m.asc are saved in the selected directories.
 
-Input:
+---
 
-LAS v2.0
+## Supported File Types
 
-Excel (.xlsx, .xls) for NPD/Lithology codes
+### Input:
+- LAS v2.0  
+- Excel (.xlsx, .xls) for NPD / Lithology codes  
 
-Output:
+### Output:
+- LAS  
+- ASCII  
 
-LAS
+---
 
-ASCII
+## Notes and Constraints
 
-Notes
+- Input LAS files must match the selected step size.  
+- MWD memory data must be imported before generating the LAS file.  
+- NPD Excel files must contain exactly two numeric columns.  
+- Existing files in output directories may be overwritten.  
+- All dialogs include built-in validation and error handling.
 
-Input LAS files must match the selected step size.
+---
 
-MWD memory data must be imported before generating the LAS file.
+## Credits
 
-NPD Excel files must contain exactly two numeric columns.
-
-Existing files in output directories may be overwritten.
-
-All dialogs include validation and error handling.
-
-Credits
-
-Developed by Faraz Zand
+Developed by Faraz Zand  
 For the SLB WCM, Geoservices team
